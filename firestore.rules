@@ -1,0 +1,138 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: projects
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required)
+    //   - type: string (required, 'hotel' or 'office')
+    //   - description: string (required)
+    //   - manager: string (required)
+    //   - targetDate: string (required, ISO 8601 date)
+    //
+    // Collection: tasks
+    // Document ID: auto-generated
+    // Fields:
+    //   - projectId: string (required)
+    //   - title: string (required)
+    //   - description: string (required)
+    //   - status: string (required)
+    //   - priority: string (required)
+    //   - phase: string (required)
+    //   - dueDate: string (required, ISO 8601 date)
+    //   - assignee: string (required)
+    //   - isChecklistItem: boolean (optional)
+    //
+    // Collection: assessments
+    // Document ID: auto-generated
+    // Fields:
+    //   - projectId: string (required)
+    //   - category: string (required)
+    //   - item: string (required)
+    //   - status: string (required)
+    //   - notes: string (optional)
+    //
+    // Collection: audit_logs
+    // Document ID: auto-generated
+    // Fields:
+    //   - projectId: string (required)
+    //   - action: string (required)
+    //   - details: string (required)
+    //   - timestamp: string (required, ISO 8601 date)
+    //   - user: string (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // Domain Validators
+    function isValidProject(data) {
+      return hasOnlyAllowedFields(['id', 'name', 'type', 'description', 'manager', 'targetDate']) &&
+             (!('id' in data) || data.id is string) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.type in ['hotel', 'office'] &&
+             data.description is string && data.description.size() < 1000 &&
+             data.manager is string && data.manager.size() > 0 && data.manager.size() < 100 &&
+             data.targetDate is string && data.targetDate.size() > 0;
+    }
+
+    function isValidTask(data) {
+      return hasOnlyAllowedFields(['id', 'projectId', 'title', 'description', 'status', 'priority', 'phase', 'dueDate', 'assignee', 'isChecklistItem']) &&
+             (!('id' in data) || data.id is string) &&
+             data.projectId is string && data.projectId.size() > 0 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string && data.description.size() < 2000 &&
+             data.status in ['pending', 'in-progress', 'review', 'completed'] &&
+             data.priority in ['low', 'medium', 'high', 'critical'] &&
+             data.phase in ['assessment', 'planning', 'renovation', 'procurement', 'staffing', 'handover'] &&
+             data.dueDate is string && data.dueDate.size() > 0 &&
+             data.assignee is string && data.assignee.size() < 100 &&
+             (!('isChecklistItem' in data) || data.isChecklistItem is bool);
+    }
+
+    function isValidAssessment(data) {
+      return hasOnlyAllowedFields(['id', 'projectId', 'category', 'item', 'status', 'notes']) &&
+             (!('id' in data) || data.id is string) &&
+             data.projectId is string && data.projectId.size() > 0 &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 100 &&
+             data.item is string && data.item.size() > 0 && data.item.size() < 200 &&
+             data.status in ['pass', 'fail', 'pending', 'n/a'] &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() < 2000));
+    }
+
+    function isValidAuditLog(data) {
+      return hasOnlyAllowedFields(['id', 'projectId', 'action', 'details', 'timestamp', 'user']) &&
+             (!('id' in data) || data.id is string) &&
+             data.projectId is string && data.projectId.size() > 0 &&
+             data.action is string && data.action.size() > 0 && data.action.size() < 100 &&
+             data.details is string && data.details.size() < 1000 &&
+             data.timestamp is string && data.timestamp.size() > 0 &&
+             data.user is string && data.user.size() > 0 && data.user.size() < 100;
+    }
+
+    // Rules
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidProject(request.resource.data);
+      allow update: if isAuthenticated() && isValidProject(request.resource.data);
+      allow delete: if isAuthenticated();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTask(request.resource.data);
+      allow update: if isAuthenticated() && isValidTask(request.resource.data);
+      allow delete: if isAuthenticated();
+    }
+
+    match /assessments/{assessmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidAssessment(request.resource.data);
+      allow update: if isAuthenticated() && isValidAssessment(request.resource.data);
+      allow delete: if isAuthenticated();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidAuditLog(request.resource.data);
+      allow update, delete: if false; // Audit logs are immutable
+    }
+  }
+}

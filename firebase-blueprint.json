@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A project such as a hotel or office.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["hotel", "office"] },
+        "description": { "type": "string" },
+        "manager": { "type": "string" },
+        "targetDate": { "type": "string", "format": "date" }
+      },
+      "required": ["name", "type", "description", "manager", "targetDate"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task associated with a project.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "in-progress", "review", "completed"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "phase": { "type": "string", "enum": ["assessment", "planning", "renovation", "procurement", "staffing", "handover"] },
+        "dueDate": { "type": "string", "format": "date" },
+        "assignee": { "type": "string" },
+        "isChecklistItem": { "type": "boolean" }
+      },
+      "required": ["projectId", "title", "description", "status", "priority", "phase", "dueDate", "assignee"]
+    },
+    "AssessmentMetric": {
+      "title": "AssessmentMetric",
+      "description": "An assessment metric for a project.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "category": { "type": "string" },
+        "item": { "type": "string" },
+        "status": { "type": "string", "enum": ["pass", "fail", "pending", "n/a"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["projectId", "category", "item", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "An audit log entry for tracking changes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "user": { "type": "string" }
+      },
+      "required": ["projectId", "action", "details", "timestamp", "user"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Collection of projects."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Collection of tasks."
+    },
+    "/assessments/{assessmentId}": {
+      "schema": { "$ref": "#/entities/AssessmentMetric" },
+      "description": "Collection of assessment metrics."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Collection of audit logs."
+    }
+  }
+}
