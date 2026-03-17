@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { initialProjects, initialTasks, initialMetrics, seedMetricsData, seedTasksData } from './data';
+import { officeSeedMetricsData, officeSeedTasksData } from './officeData';
 import { Project, Task, AssessmentMetric, AuditLog } from './types';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -300,7 +301,10 @@ export default function App() {
       let metricsCount = 0;
       let tasksCount = 0;
       
-      seedMetricsData.forEach(item => {
+      const metricsToSeed = activeProject.type === 'office' ? officeSeedMetricsData : seedMetricsData;
+      const tasksToSeed = activeProject.type === 'office' ? officeSeedTasksData : seedTasksData;
+      
+      metricsToSeed.forEach(item => {
         const newDocRef = doc(collection(db, 'assessments'));
         const newMetric: AssessmentMetric = {
           id: newDocRef.id,
@@ -319,7 +323,7 @@ export default function App() {
       defaultDueDate.setMonth(defaultDueDate.getMonth() + 1);
       const dueDateStr = defaultDueDate.toISOString().split('T')[0];
 
-      seedTasksData.forEach(item => {
+      tasksToSeed.forEach(item => {
         const newDocRef = doc(collection(db, 'tasks'));
         const newTask: Task = {
           id: newDocRef.id,
@@ -332,6 +336,7 @@ export default function App() {
           dueDate: dueDateStr,
           assignee: item.assignee,
           dependencies: item.dependencies,
+          isChecklistItem: item.isChecklistItem || false,
         };
         batch.set(newDocRef, newTask);
         tasksCount++;

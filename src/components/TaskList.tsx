@@ -70,6 +70,18 @@ export default function TaskList({ tasks, onStatusChange, onAddTask, onUpdateTas
     }
   };
 
+  const getPhaseColor = (phase: Task['phase']) => {
+    switch (phase) {
+      case 'assessment': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'planning': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'renovation': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'procurement': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'staffing': return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'handover': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="px-4 sm:px-6 py-4 sm:py-5 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -163,10 +175,17 @@ export default function TaskList({ tasks, onStatusChange, onAddTask, onUpdateTas
               <div 
                 key={task.id} 
                 onClick={() => handleOpenEdit(task)}
-                className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-sky-200 transition-all cursor-pointer flex flex-col gap-3 group"
+                className="bg-white border border-slate-200 rounded-xl hover:shadow-md hover:border-sky-200 transition-all cursor-pointer flex flex-col group overflow-hidden"
               >
-                <div className="flex justify-between items-start gap-3">
-                  <h3 className="font-medium text-slate-900 line-clamp-2 group-hover:text-sky-700 transition-colors">{task.title}</h3>
+                <div className={cn("px-5 py-3 border-b flex justify-between items-start gap-3", getPhaseColor(task.phase))}>
+                  <div>
+                    {phaseFilter === 'all' && (
+                      <span className="text-xs font-semibold uppercase tracking-wider opacity-80 block mb-1">
+                        {task.phase}
+                      </span>
+                    )}
+                    <h3 className="font-medium line-clamp-2">{task.title}</h3>
+                  </div>
                   <div onClick={(e) => {
                     e.stopPropagation();
                     if (isBlocked) {
@@ -178,7 +197,7 @@ export default function TaskList({ tasks, onStatusChange, onAddTask, onUpdateTas
                       disabled={isBlocked}
                       onChange={(e) => onStatusChange(task.id, e.target.value as Task['status'])}
                       className={cn(
-                        "text-xs font-medium border rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 py-1 pl-2 pr-6 uppercase tracking-wider appearance-none",
+                        "text-xs font-medium border rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 py-1 pl-2 pr-6 uppercase tracking-wider appearance-none bg-white",
                         isBlocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
                         getStatusColor(task.status)
                       )}
@@ -191,41 +210,38 @@ export default function TaskList({ tasks, onStatusChange, onAddTask, onUpdateTas
                   </div>
                 </div>
                 
-                <p className="text-sm text-slate-500 line-clamp-2">{task.description}</p>
+                <div className="p-5 flex flex-col flex-1">
+                  <p className="text-sm text-slate-500 line-clamp-2 mb-3">{task.description}</p>
 
-                {task.dependencies && task.dependencies.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs font-medium mt-1">
-                    <LinkIcon className="w-3.5 h-3.5 text-slate-400" />
-                    <span className={isBlocked ? "text-amber-600" : "text-emerald-600"}>
-                      {isBlocked ? `Blocked by ${incompleteDependencies.length} task(s)` : 'Dependencies met'}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="flex flex-wrap items-center gap-2 mt-auto pt-4 border-t border-slate-100">
-                  <span className={cn("px-2 py-1 rounded text-xs font-medium border uppercase tracking-wider", getPriorityColor(task.priority))}>
-                    {task.priority}
-                  </span>
-                  {phaseFilter === 'all' && (
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600 capitalize">
-                      {task.phase}
-                    </span>
-                  )}
-                  
-                  {task.notesList && task.notesList.length > 0 && (
-                    <div className="flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      {task.notesList.length}
+                  {task.dependencies && task.dependencies.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs font-medium mb-3">
+                      <LinkIcon className="w-3.5 h-3.5 text-slate-400" />
+                      <span className={isBlocked ? "text-amber-600" : "text-emerald-600"}>
+                        {isBlocked ? `Blocked by ${incompleteDependencies.length} task(s)` : 'Dependencies met'}
+                      </span>
                     </div>
                   )}
+                  
+                  <div className="flex flex-wrap items-center gap-2 mt-auto pt-4 border-t border-slate-100">
+                    <span className={cn("px-2 py-1 rounded text-xs font-medium border uppercase tracking-wider", getPriorityColor(task.priority))}>
+                      {task.priority}
+                    </span>
+                    
+                    {task.notesList && task.notesList.length > 0 && (
+                      <div className="flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        {task.notesList.length}
+                      </div>
+                    )}
 
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded ml-auto">
-                    <Clock className="w-3.5 h-3.5" />
-                    {format(new Date(task.dueDate), 'MMM d')}
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded ml-auto">
+                      <Clock className="w-3.5 h-3.5" />
+                      {format(new Date(task.dueDate), 'MMM d')}
+                    </div>
                   </div>
-                </div>
-                <div className="text-xs text-slate-500 mt-2">
-                  Assignee: <span className="font-medium text-slate-700">{task.assignee}</span>
+                  <div className="text-xs text-slate-500 mt-3 pt-3 border-t border-slate-100">
+                    Assignee: <span className="font-medium text-slate-700">{task.assignee}</span>
+                  </div>
                 </div>
               </div>
               );

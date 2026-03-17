@@ -1,6 +1,7 @@
 import React from 'react';
 import { Project, Task, AssessmentMetric } from '../types';
 import { CheckCircle2, Clock, AlertCircle, Activity } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   project: Project;
@@ -10,6 +11,9 @@ interface DashboardProps {
 
 export default function Dashboard({ project, tasks, metrics }: DashboardProps) {
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
+  const pendingTasks = tasks.filter(t => t.status === 'pending').length;
+  const inProgressTasks = tasks.filter(t => t.status === 'in-progress').length;
+  const reviewTasks = tasks.filter(t => t.status === 'review').length;
   const totalTasks = tasks.length;
   const progress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
@@ -20,9 +24,16 @@ export default function Dashboard({ project, tasks, metrics }: DashboardProps) {
   const stats = [
     { label: 'Overall Progress', value: `${progress}%`, icon: Activity, color: 'text-sky-500', bg: 'bg-sky-50' },
     { label: 'Tasks Completed', value: `${completedTasks} / ${totalTasks}`, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'In Progress', value: inProgressTasks, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
     { label: 'Assessments Passed', value: `${passedMetrics} / ${totalMetrics}`, icon: AlertCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
+
+  const pieData = [
+    { name: 'Completed', value: completedTasks, color: '#10b981' }, // emerald-500
+    { name: 'In Progress', value: inProgressTasks, color: '#f59e0b' }, // amber-500
+    { name: 'Review', value: reviewTasks, color: '#a855f7' }, // purple-500
+    { name: 'Pending', value: pendingTasks, color: '#94a3b8' }, // slate-400
+  ].filter(d => d.value > 0);
 
   return (
     <div className="space-y-6">
@@ -44,18 +55,39 @@ export default function Dashboard({ project, tasks, metrics }: DashboardProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-medium text-slate-900 mb-4">Project Timeline</h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium text-slate-700">Completion</span>
-                <span className="text-slate-500">{progress}%</span>
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Task Status Distribution</h3>
+          <div className="flex-1 flex flex-col justify-between space-y-4">
+            {totalTasks > 0 ? (
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [`${value} Tasks`, 'Count']}
+                      contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-2.5">
-                <div className="bg-sky-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+            ) : (
+              <div className="h-56 w-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-200 rounded-lg">
+                No tasks available
               </div>
-            </div>
+            )}
             <div className="pt-4 border-t border-slate-100">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Manager</span>

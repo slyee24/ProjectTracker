@@ -51,6 +51,33 @@ export default function Assessment({ metrics, onStatusChange, onAddMetric, onUpd
     }
   };
 
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      'Structural': 'bg-stone-100 text-stone-800 border-stone-200',
+      'Systems': 'bg-blue-100 text-blue-800 border-blue-200',
+      'Safety': 'bg-red-100 text-red-800 border-red-200',
+      'Aesthetics': 'bg-purple-100 text-purple-800 border-purple-200',
+      'Water & Plumbing': 'bg-cyan-100 text-cyan-800 border-cyan-200',
+      'HVAC & Cooling': 'bg-sky-100 text-sky-800 border-sky-200',
+      'Electrical & Power': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'Fire & Life Safety': 'bg-rose-100 text-rose-800 border-rose-200',
+      'Kitchen & F&B': 'bg-orange-100 text-orange-800 border-orange-200',
+      'Leisure & General': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    };
+    return colors[category] || 'bg-slate-100 text-slate-800 border-slate-200';
+  };
+
+  // Group metrics by category
+  const groupedMetrics = metrics.reduce((acc, metric) => {
+    if (!acc[metric.category]) {
+      acc[metric.category] = [];
+    }
+    acc[metric.category].push(metric);
+    return acc;
+  }, {} as Record<string, AssessmentMetric[]>);
+
+  const categories = Object.keys(groupedMetrics).sort();
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -72,61 +99,70 @@ export default function Assessment({ metrics, onStatusChange, onAddMetric, onUpd
             No assessment metrics found for this project.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {metrics.map((metric) => (
-              <div 
-                key={metric.id} 
-                onClick={() => handleOpenEdit(metric)}
-                className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-sky-200 transition-all cursor-pointer flex flex-col gap-3 group"
-              >
-                <div className="flex justify-between items-start gap-3">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{metric.category}</span>
-                    <h3 className="font-medium text-slate-900 mt-1 group-hover:text-sky-700 transition-colors">{metric.item}</h3>
-                    {metric.vendor && (
-                      <p className="text-xs text-slate-500 mt-1">Vendor: <span className="font-medium text-slate-700">{metric.vendor}</span></p>
-                    )}
-                  </div>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <select
-                      value={metric.status}
-                      onChange={(e) => onStatusChange(metric.id, e.target.value as AssessmentMetric['status'])}
-                      className={cn(
-                        "text-xs font-medium border rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 py-1 pl-2 pr-6 uppercase tracking-wider cursor-pointer appearance-none",
-                        getStatusBadge(metric.status)
-                      )}
+          <div className="space-y-8">
+            {categories.map(category => (
+              <div key={category} className="space-y-4">
+                <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{category}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {groupedMetrics[category].map((metric) => (
+                    <div 
+                      key={metric.id} 
+                      onClick={() => handleOpenEdit(metric)}
+                      className="bg-white border border-slate-200 rounded-xl hover:shadow-md hover:border-sky-200 transition-all cursor-pointer flex flex-col group overflow-hidden"
                     >
-                      <option value="pending">PENDING</option>
-                      <option value="pass">PASS</option>
-                      <option value="fail">FAIL</option>
-                      <option value="n/a">N/A</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="bg-slate-50 rounded-lg p-3 mt-1 flex-1">
-                  {metric.notesList && metric.notesList.length > 0 ? (
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-1">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        {metric.notesList.length} Note{metric.notesList.length !== 1 ? 's' : ''} (Latest: {new Date(metric.notesList[0].timestamp).toLocaleDateString()})
+                      <div className={cn("px-5 py-3 border-b flex justify-between items-start gap-3", getCategoryColor(metric.category))}>
+                        <div>
+                          <span className="text-xs font-semibold uppercase tracking-wider opacity-80">{metric.category}</span>
+                          <h3 className="font-medium mt-1">{metric.item}</h3>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <select
+                            value={metric.status}
+                            onChange={(e) => onStatusChange(metric.id, e.target.value as AssessmentMetric['status'])}
+                            className={cn(
+                              "text-xs font-medium border rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 py-1 pl-2 pr-6 uppercase tracking-wider cursor-pointer appearance-none bg-white",
+                              getStatusBadge(metric.status)
+                            )}
+                          >
+                            <option value="pending">PENDING</option>
+                            <option value="pass">PASS</option>
+                            <option value="fail">FAIL</option>
+                            <option value="n/a">N/A</option>
+                          </select>
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-600 line-clamp-2 italic">
-                        "{metric.notesList[0].text}"
-                      </p>
+                      
+                      <div className="p-5 flex flex-col gap-3 flex-1">
+                        {metric.vendor && (
+                          <p className="text-xs text-slate-500">Vendor: <span className="font-medium text-slate-700">{metric.vendor}</span></p>
+                        )}
+                        <div className="bg-slate-50 rounded-lg p-3 flex-1">
+                          {metric.notesList && metric.notesList.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-1">
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                {metric.notesList.length} Note{metric.notesList.length !== 1 ? 's' : ''} (Latest: {new Date(metric.notesList[0].timestamp).toLocaleDateString()})
+                              </div>
+                              <p className="text-sm text-slate-600 line-clamp-2 italic">
+                                "{metric.notesList[0].text}"
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-slate-600 line-clamp-3 italic">
+                              {metric.notes ? `"${metric.notes}"` : 'No notes provided.'}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-100">
+                          {getStatusIcon(metric.status)}
+                          <span className="text-sm font-medium capitalize text-slate-700">
+                            {metric.status === 'n/a' ? 'Not Applicable' : `${metric.status} Status`}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-slate-600 line-clamp-3 italic">
-                      {metric.notes ? `"${metric.notes}"` : 'No notes provided.'}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-100">
-                  {getStatusIcon(metric.status)}
-                  <span className="text-sm font-medium capitalize text-slate-700">
-                    {metric.status === 'n/a' ? 'Not Applicable' : `${metric.status} Status`}
-                  </span>
+                  ))}
                 </div>
               </div>
             ))}
