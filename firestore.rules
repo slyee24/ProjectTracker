@@ -74,7 +74,7 @@ service cloud.firestore {
     }
 
     function isValidTask(data) {
-      return hasOnlyAllowedFields(['id', 'projectId', 'title', 'description', 'status', 'priority', 'phase', 'dueDate', 'assignee', 'isChecklistItem']) &&
+      return hasOnlyAllowedFields(['id', 'projectId', 'title', 'description', 'status', 'priority', 'phase', 'dueDate', 'assignee', 'isChecklistItem', 'dependencies', 'notesList']) &&
              (!('id' in data) || data.id is string) &&
              data.projectId is string && data.projectId.size() > 0 &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
@@ -84,17 +84,21 @@ service cloud.firestore {
              data.phase in ['assessment', 'planning', 'renovation', 'procurement', 'staffing', 'handover'] &&
              data.dueDate is string && data.dueDate.size() > 0 &&
              data.assignee is string && data.assignee.size() < 100 &&
-             (!('isChecklistItem' in data) || data.isChecklistItem is bool);
+             (!('isChecklistItem' in data) || data.isChecklistItem is bool) &&
+             (!('dependencies' in data) || data.dependencies is list) &&
+             (!('notesList' in data) || data.notesList is list);
     }
 
     function isValidAssessment(data) {
-      return hasOnlyAllowedFields(['id', 'projectId', 'category', 'item', 'status', 'notes']) &&
+      return hasOnlyAllowedFields(['id', 'projectId', 'category', 'item', 'status', 'notes', 'vendor', 'notesList']) &&
              (!('id' in data) || data.id is string) &&
              data.projectId is string && data.projectId.size() > 0 &&
              data.category is string && data.category.size() > 0 && data.category.size() < 100 &&
              data.item is string && data.item.size() > 0 && data.item.size() < 200 &&
              data.status in ['pass', 'fail', 'pending', 'n/a'] &&
-             (!('notes' in data) || (data.notes is string && data.notes.size() < 2000));
+             (!('notes' in data) || (data.notes is string && data.notes.size() < 2000)) &&
+             (!('vendor' in data) || (data.vendor is string && data.vendor.size() < 200)) &&
+             (!('notesList' in data) || data.notesList is list);
     }
 
     function isValidAuditLog(data) {

@@ -21,7 +21,7 @@ export default function Dashboard({ project, tasks, metrics }: DashboardProps) {
     { label: 'Overall Progress', value: `${progress}%`, icon: Activity, color: 'text-sky-500', bg: 'bg-sky-50' },
     { label: 'Tasks Completed', value: `${completedTasks} / ${totalTasks}`, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { label: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { label: 'Health Score', value: `${healthScore}/100`, icon: AlertCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { label: 'Assessments Passed', value: `${passedMetrics} / ${totalMetrics}`, icon: AlertCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
 
   return (

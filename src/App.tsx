@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { initialProjects, initialTasks, initialMetrics, seedMetricsData } from './data';
+import { initialProjects, initialTasks, initialMetrics, seedMetricsData, seedTasksData } from './data';
 import { Project, Task, AssessmentMetric, AuditLog } from './types';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -8,7 +8,8 @@ import Assessment from './components/Assessment';
 import Checklist from './components/Checklist';
 import AuditLogList from './components/AuditLogList';
 import Login from './components/Login';
-import { Menu, Loader2 } from 'lucide-react';
+import EditProjectModal from './components/EditProjectModal';
+import { Menu, Loader2, Edit2 } from 'lucide-react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
@@ -76,6 +77,7 @@ export default function App() {
   const [activeProjectId, setActiveProjectId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -275,20 +277,29 @@ export default function App() {
     }
   };
 
+  const handleUpdateProject = async (updatedProject: Project) => {
+    try {
+      await updateDoc(doc(db, 'projects', updatedProject.id), { ...updatedProject });
+      await logAction(activeProjectId, 'Project Updated', `Project details were updated`);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `projects/${updatedProject.id}`);
+    }
+  };
+
   const handleSeedData = async () => {
     if (!activeProjectId || isSeeding) return;
     
     // Confirm before seeding
-    if (!window.confirm('This will add all the assessment items from the table to the current project. Continue?')) {
+    if (!window.confirm('This will add all the assessment items and tasks from the table to the current project. Continue?')) {
       return;
     }
 
     setIsSeeding(true);
     try {
       const batch = writeBatch(db);
-      let count = 0;
+      let metricsCount = 0;
+      let tasksCount = 0;
       
-      // We will batch in chunks of 500 if needed, but we only have ~40 items so one batch is fine.
       seedMetricsData.forEach(item => {
         const newDocRef = doc(collection(db, 'assessments'));
         const newMetric: AssessmentMetric = {
@@ -301,12 +312,34 @@ export default function App() {
           notes: '',
         };
         batch.set(newDocRef, newMetric);
-        count++;
+        metricsCount++;
+      });
+
+      const defaultDueDate = new Date();
+      defaultDueDate.setMonth(defaultDueDate.getMonth() + 1);
+      const dueDateStr = defaultDueDate.toISOString().split('T')[0];
+
+      seedTasksData.forEach(item => {
+        const newDocRef = doc(collection(db, 'tasks'));
+        const newTask: Task = {
+          id: newDocRef.id,
+          projectId: activeProjectId,
+          title: `[${item.originalId}] ${item.title}`,
+          description: item.title,
+          status: 'pending',
+          priority: item.priority as any,
+          phase: item.phase as any,
+          dueDate: dueDateStr,
+          assignee: item.assignee,
+          dependencies: item.dependencies,
+        };
+        batch.set(newDocRef, newTask);
+        tasksCount++;
       });
       
       await batch.commit();
-      await logAction(activeProjectId, 'Data Seeded', `Seeded ${count} assessment metrics from table`);
-      alert(`Successfully added ${count} assessment items!`);
+      await logAction(activeProjectId, 'Data Seeded', `Seeded ${metricsCount} assessments and ${tasksCount} tasks`);
+      alert(`Successfully added ${metricsCount} assessments and ${tasksCount} tasks!`);
     } catch (error) {
       console.error('Failed to seed data', error);
       alert('Failed to seed data. Check console for details.');
@@ -347,7 +380,16 @@ export default function App() {
                 <Menu className="w-6 h-6" />
               </button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">{activeProject.name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">{activeProject.name}</h1>
+                  <button 
+                    onClick={() => setIsEditProjectModalOpen(true)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                    title="Edit Project Details"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                </div>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">{activeProject.description}</p>
               </div>
             </div>
@@ -395,6 +437,15 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {isEditProjectModalOpen && (
+        <EditProjectModal
+          project={activeProject}
+          isOpen={isEditProjectModalOpen}
+          onClose={() => setIsEditProjectModalOpen(false)}
+          onSave={handleUpdateProject}
+        />
+      )}
     </div>
   );
 }
