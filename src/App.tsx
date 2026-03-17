@@ -403,13 +403,6 @@ export default function App() {
                 <div className="text-xs sm:text-sm font-medium text-slate-900">Target Date</div>
                 <div className="text-xs sm:text-sm text-slate-500">{new Date(activeProject.targetDate).toLocaleDateString()}</div>
               </div>
-              <button
-                onClick={handleSeedData}
-                disabled={isSeeding}
-                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md font-medium transition-colors disabled:opacity-50"
-              >
-                {isSeeding ? 'Seeding...' : 'Seed Table Data'}
-              </button>
             </div>
           </div>
         </header>

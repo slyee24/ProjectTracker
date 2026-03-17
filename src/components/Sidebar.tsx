@@ -1,11 +1,10 @@
 import React from 'react';
 import { Project } from '../types';
 import { TabType } from '../App';
-import { Building2, Briefcase, LayoutDashboard, ClipboardCheck, ListTodo, CheckSquare, X, LogOut, History, MessageSquare } from 'lucide-react';
+import { Building2, Briefcase, LayoutDashboard, ClipboardCheck, ListTodo, CheckSquare, X, LogOut, History } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import ResetDatabaseButton from './ResetDatabaseButton';
 
 interface SidebarProps {
   projects: Project[];
@@ -23,7 +22,6 @@ export default function Sidebar({ projects, activeProjectId, onSelectProject, ac
     { id: 'assessment', label: 'Status Assessment', icon: ClipboardCheck },
     { id: 'tasks', label: 'All Tasks', icon: ListTodo },
     { id: 'checklist', label: 'Final Checklist', icon: CheckSquare },
-    { id: 'notes', label: 'Notes', icon: MessageSquare },
     { id: 'audit', label: 'Audit Logs', icon: History },
   ];
 
@@ -111,7 +109,6 @@ export default function Sidebar({ projects, activeProjectId, onSelectProject, ac
             <LogOut className="w-4 h-4" />
           </button>
         </div>
-        <ResetDatabaseButton />
       </div>
     </aside>
     </>
